@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototipo WhatsApp — web local</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  section { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+  button { padding: .5rem 1rem; cursor: pointer; }
+  textarea, input { width: 100%; padding: .5rem; margin: .25rem 0 .5rem; box-sizing: border-box; }
+  pre { background: #f6f6f6; padding: .75rem; overflow-x: auto; white-space: pre-wrap; }
+  .aviso { background: #fff8e1; border-color: #e6c200; }
+</style>
+</head>
+<body>
+<h1>Prototipo WhatsApp — web local</h1>
+<section class="aviso">
+  <strong>Sesión simulada.</strong> Esto no se conecta a WhatsApp ni envía
+  mensajes reales. El QR es de demostración y las respuestas quedan como
+  borradores para que las apruebes.
+</section>
+
+<section>
+  <h2>1. Sesión</h2>
+  <button id="btn-qr">Generar QR simulado</button>
+  <button id="btn-conectar">Simular conexión</button>
+  <button id="btn-cerrar">Cerrar sesión</button>
+  <pre id="sesion">Pulsa "Generar QR simulado" para empezar.</pre>
+</section>
+
+<section>
+  <h2>2. Alimentar tu estilo</h2>
+  <p>Pega un chat exportado de WhatsApp y tu nombre tal como aparece en él.</p>
+  <input id="nombre" placeholder="Tu nombre en el chat, por ejemplo: William">
+  <textarea id="chat" rows="6" placeholder="12/11/2026, 10:15 - William: hola, ¿qué tal?&#10;12/11/2026, 10:16 - Ana: hola, ¿mañana puedes?"></textarea>
+  <button id="btn-alimentar">Aprender mi estilo</button>
+  <pre id="estilo"></pre>
+</section>
+
+<section>
+  <h2>3. Mensaje entrante (simulado)</h2>
+  <p>Al entrar un mensaje, el flujo interno genera el borrador automáticamente.</p>
+  <input id="de" placeholder="Quién escribe, por ejemplo: Ana">
+  <input id="texto" placeholder="Mensaje, por ejemplo: hola, ¿mañana puedes?">
+  <button id="btn-mensaje">Simular mensaje entrante</button>
+  <pre id="mensajes"></pre>
+</section>
+
+<section>
+  <h2>4. Borradores</h2>
+  <button id="btn-borradores">Ver borradores</button>
+  <pre id="borradores">Aún no hay borradores.</pre>
+</section>
+
+<script>
+const api = async (ruta, metodo = "GET", cuerpo) => {
+  const hacer = () => fetch(ruta, { method: metodo, headers: { "Content-Type": "application/json", "X-Token": sessionStorage.getItem("prototipo-token") || "" }, body: cuerpo ? JSON.stringify(cuerpo) : undefined });
+  let r = await hacer();
+  if (r.status === 401) {
+    const token = prompt("Token de acceso del servidor privado:");
+    if (token) { sessionStorage.setItem("prototipo-token", token); r = await hacer(); }
+  }
+  return r.json();
+};
+document.getElementById("btn-qr").onclick = async () => {
+  document.getElementById("sesion").textContent = JSON.stringify(await api("/sesion/qr", "POST"), null, 2);
+};
+document.getElementById("btn-conectar").onclick = async () => {
+  document.getElementById("sesion").textContent = JSON.stringify(await api("/sesion/conectar", "POST"), null, 2);
+};
+document.getElementById("btn-cerrar").onclick = async () => {
+  document.getElementById("sesion").textContent = JSON.stringify(await api("/sesion/cerrar", "POST"), null, 2);
+};
+document.getElementById("btn-alimentar").onclick = async () => {
+  const nombre_propio = document.getElementById("nombre").value;
+  const texto = document.getElementById("chat").value;
+  document.getElementById("estilo").textContent = JSON.stringify(await api("/alimentar", "POST", { nombre_propio, texto }), null, 2);
+};
+document.getElementById("btn-mensaje").onclick = async () => {
+  const de = document.getElementById("de").value;
+  const texto = document.getElementById("texto").value;
+  const m = await api("/mensajes", "POST", { de, texto });
+  document.getElementById("mensajes").textContent = JSON.stringify(m, null, 2);
+  document.getElementById("borradores").textContent = JSON.stringify(await api("/borradores"), null, 2);
+};
+document.getElementById("btn-borradores").onclick = async () => {
+  document.getElementById("borradores").textContent = JSON.stringify(await api("/borradores"), null, 2);
+};
+</script>
+</body>
+</html>

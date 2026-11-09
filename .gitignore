@@ -1,0 +1,12 @@
+# Datos locales del prototipo: perfil, ejemplos alimentados y borradores.
+# Nunca deben subirse: pueden contener chats personales.
+datos/
+
+# Binario compilado
+/prototipo
+/prototipo-whatsapp
+*.exe
+
+# Temporales del sistema/editor
+.DS_Store
+*.tmp
